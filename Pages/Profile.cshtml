@@ -1,0 +1,318 @@
+﻿@page
+@model CourseFlow.Pages.ProfileModel
+@{
+    ViewData["Title"] = "My Profile";
+}
+
+<style>
+    body {
+        background: #f4f6fb;
+    }
+
+    .profile-wrapper {
+        margin-top: 40px;
+        margin-bottom: 40px;
+    }
+
+    /* HERO */
+    .profile-hero {
+        background: linear-gradient(135deg, #4f46e5, #6366f1);
+        color: white;
+        padding: 32px;
+        border-radius: 18px;
+        display: flex;
+        align-items: center;
+        gap: 24px;
+        box-shadow: 0 20px 40px rgba(79, 70, 229, 0.25);
+        margin-bottom: 32px;
+    }
+
+    .avatar-img {
+        width: 90px;
+        height: 90px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 4px solid rgba(255,255,255,0.6);
+        background: white;
+    }
+
+    .profile-hero h2 {
+        margin: 0;
+        font-size: 26px;
+    }
+
+    .profile-hero p {
+        margin: 4px 0 0;
+        opacity: 0.9;
+        font-size: 14px;
+    }
+
+    /* TABS */
+    .profile-tabs {
+        background: white;
+        border-radius: 16px;
+        box-shadow: 0 12px 24px rgba(0,0,0,0.08);
+        padding: 24px;
+    }
+
+    .nav-tabs {
+        border-bottom: 1px solid #eee;
+    }
+
+    .nav-tabs .nav-link {
+        border: none;
+        color: #666;
+        font-weight: 500;
+        padding: 10px 16px;
+    }
+
+    .nav-tabs .nav-link.active {
+        color: #4f46e5;
+        border-bottom: 2px solid #4f46e5;
+        background: transparent;
+    }
+
+    .tab-content {
+        padding-top: 24px;
+    }
+
+    /* INFO ROW */
+    .info-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 12px 0;
+        border-bottom: 1px solid #eee;
+        font-size: 14px;
+    }
+
+    .info-row:last-child {
+        border-bottom: none;
+    }
+
+    .info-label {
+        color: #666;
+    }
+
+    .info-value {
+        font-weight: 500;
+        color: #333;
+    }
+
+    .form-control, .form-select {
+        border-radius: 10px;
+        font-size: 14px;
+    }
+
+    .btn-primary {
+        background: #4f46e5;
+        border: none;
+        border-radius: 10px;
+        padding: 10px 16px;
+    }
+</style>
+
+<div class="container profile-wrapper">
+
+    <!-- HERO -->
+    <div class="profile-hero">
+        <img class="avatar-img"
+             id="heroAvatar"
+             src="@(Model.Profile?.profile_image_path ?? "/uploads/students/default.png")" />
+
+        <div>
+            <h2>@Model.CurrentUser.FullName</h2>
+            <p>@Model.CurrentUser.Email</p>
+        </div>
+    </div>
+
+    <!-- TABS -->
+    <div class="profile-tabs">
+
+        <ul class="nav nav-tabs" role="tablist">
+            <li class="nav-item">
+                <button class="nav-link active"
+                        data-bs-toggle="tab"
+                        data-bs-target="#tab-profile">
+                    Profile Info
+                </button>
+            </li>
+
+            <li class="nav-item">
+                <button class="nav-link"
+                        data-bs-toggle="tab"
+                        data-bs-target="#tab-edit">
+                    Edit Profile
+                </button>
+            </li>
+
+            <li class="nav-item">
+                <button class="nav-link"
+                        data-bs-toggle="tab"
+                        data-bs-target="#tab-password">
+                    Change Password
+                </button>
+            </li>
+        </ul>
+
+        <div class="tab-content">
+
+            <!-- PROFILE INFO -->
+            <div class="tab-pane fade show active" id="tab-profile">
+                <div class="info-row">
+                    <span class="info-label">Full Name</span>
+                    <span class="info-value">@Model.CurrentUser.FullName</span>
+                </div>
+
+                <div class="info-row">
+                    <span class="info-label">Email</span>
+                    <span class="info-value">@Model.CurrentUser.Email</span>
+                </div>
+
+                <div class="info-row">
+                    <span class="info-label">Status</span>
+                    <span class="info-value">
+                        @(Model.CurrentUser.IsActive ? "Active" : "Inactive")
+                    </span>
+                </div>
+
+                <div class="info-row">
+                    <span class="info-label">Phone</span>
+                    <span class="info-value">@Model.Profile?.Phone</span>
+                </div>
+
+                <div class="info-row">
+                    <span class="info-label">Date of Birth</span>
+                    <span class="info-value">
+                        @(Model.Profile?.DateOfBirth?.ToString("yyyy-MM-dd"))
+                    </span>
+                </div>
+
+                <div class="info-row">
+                    <span class="info-label">Gender</span>
+                    <span class="info-value">@Model.Profile?.Gender</span>
+                </div>
+
+                <div class="info-row">
+                    <span class="info-label">Address</span>
+                    <span class="info-value">@Model.Profile?.Address</span>
+                </div>
+            </div>
+
+            <!-- EDIT PROFILE -->
+            <div class="tab-pane fade" id="tab-edit">
+                <form method="post"
+                      asp-page-handler="UpdateProfile"
+                      enctype="multipart/form-data">
+
+                    <!-- IMAGE -->
+                    <div class="text-center mb-4">
+                        <img id="avatarPreview"
+                             src="@(Model.Profile?.profile_image_path ?? "/uploads/students/default.png")"
+                             class="avatar-img mb-2" />
+
+                        <input type="file"
+                               class="form-control mt-2"
+                               name="profileImage"
+                               accept="image/*"
+                               onchange="previewImage(this)" />
+
+                        <small class="text-muted">
+                            JPG / PNG • Max 2MB
+                        </small>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Full Name</label>
+                        <input class="form-control"
+                               name="FullName"
+                               value="@Model.CurrentUser.FullName"
+                               required />
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Phone</label>
+                        <input class="form-control"
+                               name="phone"
+                               value="@Model.Profile?.Phone" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Date of Birth</label>
+                        <input type="date"
+                               class="form-control"
+                               name="dateOfBirth"
+                               value="@Model.Profile?.DateOfBirth?.ToString("yyyy-MM-dd")" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Gender</label>
+                        <select class="form-select" name="gender">
+                            <option value="">-- Select --</option>
+                            <option value="Male" selected="@(Model.Profile?.Gender=="Male")">Male</option>
+                            <option value="Female" selected="@(Model.Profile?.Gender=="Female")">Female</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Address</label>
+                        <textarea class="form-control"
+                                  name="address">@Model.Profile?.Address</textarea>
+                    </div>
+
+                    <button class="btn btn-primary w-100">
+                        Save Changes
+                    </button>
+                </form>
+            </div>
+
+            <!-- CHANGE PASSWORD -->
+            <div class="tab-pane fade" id="tab-password">
+                <form method="post" asp-page-handler="ChangePassword">
+
+                    <div class="mb-3">
+                        <label class="form-label">Current Password</label>
+                        <input type="password"
+                               class="form-control"
+                               name="currentPassword"
+                               required />
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">New Password</label>
+                        <input type="password"
+                               class="form-control"
+                               name="newPassword"
+                               required />
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Confirm New Password</label>
+                        <input type="password"
+                               class="form-control"
+                               name="confirmPassword"
+                               required />
+                    </div>
+
+                    <button class="btn btn-primary w-100">
+                        Update Password
+                    </button>
+                </form>
+            </div>
+
+        </div>
+    </div>
+
+</div>
+
+<script>
+function previewImage(input) {
+    if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = e => {
+            document.getElementById('avatarPreview').src = e.target.result;
+            document.getElementById('heroAvatar').src = e.target.result;
+        };
+        reader.readAsDataURL(input.files[0]);
+    }
+}
+</script>

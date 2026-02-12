@@ -1,0 +1,159 @@
+@page
+@model CourseFlow.Pages.Staff.IndexModel
+@{
+    ViewData["Title"] = "Staff Dashboard";
+}
+
+<div class="container-fluid py-4">
+
+    <!-- TOP METRICS -->
+    <div class="row g-4 mb-4">
+
+        <!-- Profile -->
+        <div class="col-md-4">
+            <div class="card shadow-sm border-0 rounded-4 h-100 hover-card">
+                <div class="card-body text-center">
+
+                    <div class="display-6 fw-bold">
+                        @DateTime.Now.ToString("dd")
+                    </div>
+
+                    <div class="fw-semibold">
+                        @DateTime.Now.ToString("dddd")
+                    </div>
+
+                    <div class="text-muted">
+                        @DateTime.Now.ToString("MMMM yyyy")
+                    </div>
+
+                    <span class="badge bg-primary-subtle text-primary mt-2">
+                        Today
+                    </span>
+
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Pending Requests -->
+        <div class="col-md-4">
+            <a asp-page="/Staff/Approvals/Index"
+               class="text-decoration-none">
+                <div class="card shadow-sm border-0 rounded-4 h-100 bg-warning-subtle hover-card">
+                    <div class="card-body">
+                        <h6 class="text-warning">Pending Requests</h6>
+                        <h2 class="fw-bold text-warning">
+                            @Model.PendingApprovalCount
+                        </h2>
+                    </div>
+                </div>
+            </a>
+        </div>
+
+        <!-- My Courses -->
+        <div class="col-md-4">
+            <a asp-page="/Courses/Index"
+               class="text-decoration-none">
+                <div class="card shadow-sm border-0 rounded-4 h-100 hover-card">
+                    <div class="card-body">
+                        <h6 class="text-muted">My Courses</h6>
+                        <h2 class="fw-bold">@Model.CourseCount</h2>
+                    </div>
+                </div>
+            </a>
+        </div>
+
+
+    </div>
+
+    <!-- SECOND ROW -->
+    <div class="row g-4 mb-4">
+
+        <!-- MY COURSES TABLE -->
+        <div class="col-lg-7">
+            <div class="card shadow-sm border-0 rounded-4 h-100">
+                <div class="card-header bg-white border-0">
+                    <h5 class="fw-semibold mb-0">
+                        My Courses
+                    </h5>
+                </div>
+
+                <div class="card-body p-0">
+                    @if (!Model.Courses.Any())
+                    {
+                        <div class="p-4 text-muted">
+                            No courses assigned.
+                        </div>
+                    }
+                    else
+                    {
+                        <table class="table mb-0 align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Code</th>
+                                    <th>Course</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                            @foreach (var c in Model.Courses)
+                            {
+                                <tr>
+                                    <td>@c.CourseCode</td>
+                                    <td>@c.CourseName</td>
+                                    <td>
+                                        @if (c.IsActive)
+                                        {
+                                            <span class="badge bg-success">Active</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-secondary">Inactive</span>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                            </tbody>
+                        </table>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- ANNOUNCEMENTS -->
+        <div class="col-lg-5">
+            <div class="card shadow-sm border-0 rounded-4 h-100">
+                <div class="card-header bg-white border-0">
+                    <h5 class="fw-semibold mb-0">
+                        Announcements
+                    </h5>
+                </div>
+
+                <div class="card-body">
+                    @if (!Model.Announcements.Any())
+                    {
+                        <p class="text-muted mb-0">
+                            No announcements.
+                        </p>
+                    }
+                    else
+                    {
+                        <ul class="list-group list-group-flush">
+                            @foreach (var a in Model.Announcements)
+                            {
+                                <li class="list-group-item px-0">
+                                    <strong>@a.Title</strong><br />
+                                    <small class="text-muted">
+                                        @a.CreatedAt.ToString("dd MMM yyyy")
+                                    </small>
+                                </li>
+                            }
+                        </ul>
+                    }
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+</div>

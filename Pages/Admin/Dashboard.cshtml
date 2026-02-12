@@ -1,0 +1,204 @@
+@page
+@model CourseFlow.Pages.Admin.DashboardModel
+@{
+    ViewData["Title"] = "Admin Dashboard";
+}
+
+<div class="container-fluid py-4">
+
+    <div class="row g-4 mb-4">
+
+        <!-- Staff -->
+        <div class="col-md-3">
+            <a asp-page="/Admin/Staff/Index"
+            class="text-decoration-none">
+                <div class="card shadow-sm border-0 rounded-4 h-100 hover-card">
+                    <div class="card-body">
+                        <h6 class="text-muted">Staff</h6>
+                        <h2 class="fw-bold">@Model.TotalStaff</h2>
+                    </div>
+                </div>
+            </a>
+        </div>
+
+        <!-- Students -->
+        <div class="col-md-3">
+            <a asp-page="/Admin/Students/Index"
+            class="text-decoration-none">
+                <div class="card shadow-sm border-0 rounded-4 h-100 hover-card">
+                    <div class="card-body">
+                        <h6 class="text-muted">Students</h6>
+                        <h2 class="fw-bold">@Model.TotalStudents</h2>
+                    </div>
+                </div>
+            </a>
+        </div>
+
+        <!-- Courses -->
+        <div class="col-md-3">
+            <a asp-page="/Courses/Index"
+            class="text-decoration-none">
+                <div class="card shadow-sm border-0 rounded-4 h-100 hover-card">
+                    <div class="card-body">
+                        <h6 class="text-muted">Active Courses</h6>
+                        <h2 class="fw-bold">@Model.ActiveCourses</h2>
+                    </div>
+                </div>
+            </a>
+        </div>
+
+        <!-- Pending -->
+        <div class="col-md-3">
+            <a asp-page="/Courses/Index"
+            class="text-decoration-none">
+                <div class="card shadow-sm border-0 rounded-4 h-100 bg-warning-subtle hover-card">
+                    <div class="card-body">
+                        <h6 class="text-warning">Pending Requests</h6>
+                        <h2 class="fw-bold text-warning">@Model.PendingRequests</h2>
+                    </div>
+                </div>
+            </a>
+        </div>
+
+    </div>
+
+
+    <div class="row g-4 mb-4">
+        <!-- Pending Actions -->
+        <div class="col-lg-7">
+            <div class="card shadow-sm border-0 rounded-4 h-100">
+                <div class="card-header bg-white border-0">
+                    <h5 class="fw-semibold mb-0">Pending Actions</h5>
+                </div>
+
+                <div class="card-body p-0">
+                    @if (!Model.PendingCourseRequests.Any())
+                    {
+                        <div class="p-4 text-muted">
+                            No pending requests 🎉
+                        </div>
+                    }
+                    else
+                    {
+                        <table class="table mb-0 align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Item</th>
+                                    <th>Requested By</th>
+                                    <th>Date</th>
+                                    <th class="text-end"></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                            @foreach (var r in Model.PendingCourseRequests)
+                            {
+                                <tr>
+                                    <td>@r.CourseName</td>
+                                    <td>@r.RequestedBy</td>
+                                    <td>@r.CreatedAt.ToString("dd MMM yyyy")</td>
+                                    <td class="text-end">
+                                        <a asp-page="/Courses/Index"
+                                        class="btn btn-sm btn-outline-primary">
+                                            Review
+                                        </a>
+                                    </td>
+                                </tr>
+                            }
+                            </tbody>
+                        </table>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- Announcements -->
+        <div class="col-lg-5">
+            <div class="card shadow-sm border-0 rounded-4 h-100">
+                <div class="card-header bg-white border-0">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="fw-semibold mb-0">Announcements</h5>
+
+                        <a href="javascript:void(0)"
+                        class="text-primary text-decoration-underline small"
+                        data-bs-toggle="modal"
+                        data-bs-target="#addAnnouncementModal">
+                            + Add
+                        </a>
+                    </div>
+                </div>
+
+
+                <div class="card-body">
+                    @if (!Model.Announcements.Any())
+                    {
+                        <p class="text-muted mb-0">
+                            No announcements.
+                        </p>
+                    }
+                    else
+                    {
+                        <ul class="list-group list-group-flush">
+                            @foreach (var a in Model.Announcements)
+                            {
+                                <li class="list-group-item px-0">
+                                    <strong>@a.Title</strong><br />
+                                    <small class="text-muted">
+                                        @a.CreatedAt.ToString("dd MMM yyyy")
+                                    </small>
+                                </li>
+                            }
+                        </ul>
+                    }
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+</div>
+
+<!-- CREATE ANNOUNCEMENT MODAL -->
+<div class="modal fade" id="addAnnouncementModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4">
+
+            <form method="post" asp-page-handler="AddAnnouncement">
+                <div class="modal-header">
+                    <h5 class="modal-title">Create Announcement</h5>
+                    <button type="button"
+                            class="btn-close"
+                            data-bs-dismiss="modal"></button>
+                </div>
+
+                <div class="modal-body">
+                    <label class="form-label">Title</label>
+                    <input class="form-control mb-3"
+                           name="Title"
+                           required />
+
+                    <label class="form-label">Message</label>
+                    <textarea class="form-control"
+                              name="Message"
+                              rows="4"
+                              required></textarea>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button"
+                            class="btn btn-secondary"
+                            data-bs-dismiss="modal">
+                        Cancel
+                    </button>
+
+                    <button type="submit"
+                            class="btn btn-primary">
+                        Publish
+                    </button>
+                </div>
+            </form>
+
+        </div>
+    </div>
+</div>
+
+

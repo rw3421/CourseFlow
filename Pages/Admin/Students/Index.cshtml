@@ -1,0 +1,713 @@
+@page
+@model CourseFlow.Pages.Admin.Students.IndexModel
+@{
+    ViewData["Title"] = "Student Management";
+}
+
+<style>
+    .student-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        object-fit: cover;
+    }
+
+    .inactive-row {
+        opacity: 0.5;
+        filter: grayscale(100%);
+    }
+
+    .table-hover tbody tr:hover {
+        background-color: #f8f9fa;
+    }
+</style>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>Student Management</h2>
+    @if (User.IsInRole("ADMIN"))
+    {
+        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addModal">
+            + Add Student
+        </button>
+    }
+</div>
+
+<!-- SEARCH -->
+<form method="get" class="row g-2 mb-3">
+    <div class="col-md-4">
+        <input class="form-control" name="search" value="@Model.Search"
+               placeholder="Search name / email / phone" />
+    </div>
+    <div class="col-md-3">
+        <select class="form-select" name="status">
+            <option value="">All</option>
+            <option value="active" selected="@(Model.Status=="active")">Active</option>
+            <option value="inactive" selected="@(Model.Status=="inactive")">Inactive</option>
+        </select>
+    </div>
+    <div class="col-md-2">
+        <button class="btn btn-primary w-100">Search</button>
+    </div>
+</form>
+
+<table class="table table-bordered table-hover align-middle">
+    <thead class="table-light">
+        <tr>
+            <th>UserID</th>
+            <th>Student</th>
+            <th>Contact</th>
+            <th>Email</th>
+            <th style="width:260px;">Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var s in Model.Students)
+        {
+            <tr class="@(s.IsActive ? "" : "inactive-row")">
+
+                <td>
+                    <div>@s.Id</div>
+                </td>
+
+                <td>
+                    <div class="d-flex align-items-center gap-2">
+                        <img src="@s.profile_image_path"
+                             class="student-avatar" />
+                        <div>
+                            <div class="fw-semibold">@s.FullName</div>
+                        </div>
+                    </div>
+                </td>
+
+                <td>
+                    <div>@s.Phone</div>
+                </td>
+
+                <td>
+                    <div>@s.Email</div>
+                </td>
+
+                <td>
+                    <button class="btn btn-sm btn-outline-info"
+                            data-student='@Html.Raw(System.Text.Json.JsonSerializer.Serialize(s))'
+                            onclick="viewStudent(this)">View</button>
+                    @if (User.IsInRole("ADMIN"))
+                    {
+                        <button class="btn btn-sm btn-outline-warning"
+                                data-student='@Html.Raw(System.Text.Json.JsonSerializer.Serialize(s))'
+                                onclick="editStudent(this)">Edit</button>
+                    
+                        <button class="btn btn-sm btn-outline-danger"
+                            onclick="confirmDelete(@s.Id, '@s.FullName')">Deactivate</button>
+                    }
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+<!-- PAGINATION -->
+<nav>
+    <ul class="pagination justify-content-center">
+        @for (int i = 1; i <= Model.TotalPages; i++)
+        {
+            <li class="page-item @(i==Model.CurrentPage?"active":"")">
+                <a class="page-link"
+                   href="?pageIndex=@i&search=@Model.Search&status=@Model.Status">@i</a>
+            </li>
+        }
+    </ul>
+</nav>
+
+<!-- VIEW MODAL -->
+<div class="modal fade" id="viewModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content shadow-sm rounded-4">
+            <div class="modal-header bg-light">
+                <h5 class="modal-title fw-semibold">
+                    Student Profile
+                </h5>
+                <button class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+
+            <div class="modal-body px-4">
+                <!-- Avatar -->
+                <div class="text-center mb-3">
+                    <img id="vAvatar"
+                         src="/uploads/students/default.png"
+                         class="rounded-circle"
+                         style="width:80px;height:80px;object-fit:cover;">
+                </div>
+
+                <div class="text-center mb-4">
+                    <h5 id="vName" class="mb-0"></h5>
+                    <small id="vEmail" class="text-muted"></small>
+                </div>
+
+                <hr>
+
+                <div class="row g-3">
+                    <div class="col-6">
+                        <label class="form-label text-muted">Phone</label>
+                        <div id="vPhone" class="fw-semibold"></div>
+                    </div>
+
+                    <div class="col-6">
+                        <label class="form-label text-muted">Date of Birth</label>
+                        <div id="vDob" class="fw-semibold"></div>
+                    </div>
+
+                    <div class="col-6">
+                        <label class="form-label text-muted">Gender</label>
+                        <div id="vGender" class="fw-semibold"></div>
+                    </div>
+
+                    <div class="col-6">
+                        <label class="form-label text-muted">Address</label>
+                        <div id="vAddress" class="fw-semibold"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button class="btn btn-secondary" data-bs-dismiss="modal">
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<!-- EDIT MODAL -->
+<div class="modal fade" id="editModal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content shadow-sm rounded-4">
+
+            <form method="post"
+                  asp-page-handler="Edit"
+                  enctype="multipart/form-data">
+
+                <!-- HEADER -->
+                <div class="modal-header bg-light">
+                    <h5 class="modal-title fw-semibold">
+                        Edit Student
+                    </h5>
+                    <button class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+
+                <!-- BODY -->
+                <div class="modal-body px-4">
+                    <input type="hidden" name="id" id="eId" />
+
+                    <!-- PROFILE IMAGE -->
+                    <div class="text-center mb-4">
+                        <img id="eAvatarPreview"
+                             src="/uploads/students/default.png"
+                             class="rounded-circle mb-2"
+                             style="width:90px;height:90px;object-fit:cover;" />
+
+                        <input type="file"
+                               class="form-control"
+                               name="profileImage"
+                               accept="image/*"
+                               onchange="previewEditImage(this)" />
+                        <small class="text-muted">
+                            JPG / PNG • Max 2MB
+                        </small>
+                    </div>
+
+                    <div class="row g-3">
+                        <!-- FULL NAME -->
+                        <div class="col-md-6">
+                            <label class="form-label">Full Name</label>
+                            <input class="form-control"
+                                   name="FullName"
+                                   id="eName"
+                                   required />
+                        </div>
+
+                        <!-- EMAIL -->
+                        <div class="col-md-6">
+                            <label class="form-label">Email</label>
+                            <input class="form-control"
+                                   name="email"
+                                   id="eEmail"
+                                   required />
+                        </div>
+
+                        <!-- PHONE -->
+                        <div class="col-md-4">
+                            <label class="form-label">Phone</label>
+                            <input class="form-control"
+                                    type="tel"
+                                    inputmode="numeric"
+                                    pattern="[0-9]{10,11}"
+                                   name="phone"
+                                   id="ePhone" required/>
+                        </div>
+
+                        <!-- DOB -->
+                        <div class="col-md-4">
+                            <label class="form-label">Date of Birth</label>
+                            <input class="form-control"
+                                   type="date"
+                                   name="dateOfBirth"
+                                   id="eDob"/>
+                        </div>
+
+                        <!-- GENDER -->
+                        <div class="col-md-4">
+                            <label class="form-label">Gender</label>
+                            <select class="form-select"
+                                    name="gender"
+                                    id="eGender"
+                                    required>
+                                <option value="">Select</option>
+                                <option value="Male">Male</option>
+                                <option value="Female">Female</option>
+                            </select>
+                        </div>
+
+                        <!-- ADDRESS -->
+                        <div class="col-12">
+                            <label class="form-label">Address</label>
+                            <textarea class="form-control"
+                                      name="address"
+                                      id="eAddress"
+                                      rows="2" required></textarea>
+                        </div>
+
+                        <!-- STATUS -->
+                        <div class="col-md-4">
+                            <label class="form-label">Status</label>
+                            <select class="form-select"
+                                    name="isActive"
+                                    id="eStatus">
+                                <option value="true">Active</option>
+                                <option value="false">Inactive</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- FOOTER -->
+                <div class="modal-footer">
+                    <button class="btn btn-secondary"
+                            type="button"
+                            data-bs-dismiss="modal">
+                        Cancel
+                    </button>
+                    <button class="btn btn-primary" type="submit">
+                        Save Changes
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- DELETE MODAL -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post" asp-page-handler="Delete">
+                <div class="modal-header">
+                    <h5 class="modal-title">Delete Student</h5>
+                    <button class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+
+                <div class="modal-body">
+                    <input type="hidden" name="id" id="dId" />
+                    Are you sure you want to delete <strong id="dName"></strong>?
+                </div>
+
+                <div class="modal-footer">
+                    <button class="btn btn-danger">Delete</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- ADD MODAL -->
+<div class="modal fade" id="addModal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content shadow-sm rounded-4">
+
+            <form method="post"
+                  asp-page-handler="Add"
+                  enctype="multipart/form-data">
+
+                <!-- HEADER -->
+                <div class="modal-header bg-light">
+                    <h5 class="modal-title fw-semibold">
+                        Add New Student
+                    </h5>
+                    <button class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+
+                <!-- BODY -->
+                <div class="modal-body px-4">
+
+                    <!-- PROFILE IMAGE -->
+                    <div class="text-center mb-4">
+                        <img id="aAvatarPreview"
+                             src="/uploads/students/default.png"
+                             class="rounded-circle mb-2"
+                             style="width:90px;height:90px;object-fit:cover;" />
+
+                        <input type="file"
+                               class="form-control"
+                               name="profileImage"
+                               accept="image/*"
+                               onchange="previewAddImage(this)" />
+
+                        <small class="text-muted">
+                            JPG / PNG • Max 2MB
+                        </small>
+                    </div>
+
+                    <div class="row g-3">
+
+                        <!-- FULL NAME -->
+                        <div class="col-md-6">
+                            <label class="form-label">Full Name</label>
+                            <input class="form-control"
+                                   name="FullName"
+                                   id="FullName"
+                                   required />
+                        </div>
+
+                        <!-- EMAIL -->
+                        <div class="col-md-6">
+                            <label class="form-label">Email</label>
+                            <input class="form-control"
+                                   name="email"
+                                   id="email"
+                                   type="email"
+                                   required />
+                        </div>
+
+                        <!-- PASSWORD -->
+                        <div class="col-md-6">
+                            <label class="form-label">Password</label>
+                            <input class="form-control"
+                                   name="password"
+                                   type="password"
+                                   required />
+                        </div>
+
+                        <!-- PHONE -->
+                        <div class="col-md-6">
+                            <label class="form-label">Phone</label>
+                            <input class="form-control"
+                                    type="tel"
+                                    inputmode="numeric"
+                                    pattern="[0-9]{10,11}"
+                                   name="phone"
+                                   id="phone" required/>
+                        </div>
+
+                        <!-- DOB -->
+                        <div class="col-md-4">
+                            <label class="form-label">Date of Birth</label>
+                            <input class="form-control"
+                                   type="date"
+                                   name="dateOfBirth" />
+                        </div>
+
+                        <!-- GENDER -->
+                        <div class="col-md-4">
+                            <label class="form-label">Gender</label>
+                            <select class="form-select"
+                                    name="gender"
+                                    required>
+                                <option value="">Select</option>
+                                <option value="Male">Male</option>
+                                <option value="Female">Female</option>
+                            </select>
+                        </div>
+
+                        <!-- STATUS -->
+                        <div class="col-md-4">
+                            <label class="form-label">Status</label>
+                            <select class="form-select"
+                                    name="isActive">
+                                <option value="true" selected>Active</option>
+                                <option value="false">Inactive</option>
+                            </select>
+                        </div>
+
+                        <!-- ADDRESS -->
+                        <div class="col-12">
+                            <label class="form-label">Address</label>
+                            <textarea class="form-control"
+                                      name="address"
+                                      id="address"
+                                      rows="2" required></textarea>
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- FOOTER -->
+                <div class="modal-footer">
+                    <button class="btn btn-secondary"
+                            type="button"
+                            data-bs-dismiss="modal">
+                        Cancel
+                    </button>
+                    <button class="btn btn-success"
+                            type="submit">
+                        Add Student
+                    </button>
+                </div>
+
+            </form>
+        </div>
+    </div>
+</div>
+
+<!--Message Toast-->
+<div class="toast-container position-fixed top-0 end-0 p-3">
+
+    <!-- ADD SUCCESS -->
+    <div id="addSuccessToast"
+         class="toast align-items-center text-bg-success border-0">
+        <div class="d-flex">
+            <div class="toast-body">Student added successfully</div>
+            <button class="btn-close btn-close-white me-2 m-auto"
+                    data-bs-dismiss="toast"></button>
+        </div>
+    </div>
+
+    <!-- ADD ERROR -->
+    <div id="addErrorToast"
+         class="toast align-items-center text-bg-danger border-0">
+        <div class="d-flex">
+            <div class="toast-body">Failed to add student</div>
+            <button class="btn-close btn-close-white me-2 m-auto"
+                    data-bs-dismiss="toast"></button>
+        </div>
+    </div>
+
+    <!-- UPDATE SUCCESS -->
+    <div id="updateSuccessToast"
+         class="toast align-items-center text-bg-success border-0">
+        <div class="d-flex">
+            <div class="toast-body">Student updated successfully</div>
+            <button class="btn-close btn-close-white me-2 m-auto"
+                    data-bs-dismiss="toast"></button>
+        </div>
+    </div>
+
+    <!-- UPDATE ERROR -->
+    <div id="updateErrorToast"
+         class="toast align-items-center text-bg-danger border-0">
+        <div class="d-flex">
+            <div class="toast-body">Failed to update student</div>
+            <button class="btn-close btn-close-white me-2 m-auto"
+                    data-bs-dismiss="toast"></button>
+        </div>
+    </div>
+
+</div>
+
+
+
+<script>
+window.editSaved = false;
+
+document.addEventListener("DOMContentLoaded", function () {
+
+    // -------------------------
+    // Helpers
+    // -------------------------
+    const byId = id => document.getElementById(id);
+
+    function on(id, event, handler) {
+        const el = byId(id);
+        if (!el) return;
+        el.addEventListener(event, handler);
+    }
+
+    // -------------------------
+    // Uppercase fields
+    // -------------------------
+    ["eName", "FullName", "eAddress", "address"].forEach(id => {
+        on(id, "input", function () {
+            this.value = String(this.value || "").toUpperCase();
+        });
+    });
+
+    // -------------------------
+    // Lowercase email
+    // -------------------------
+    ["email", "eEmail"].forEach(id => {
+        on(id, "input", function () {
+            this.value = String(this.value || "").toLowerCase();
+        });
+    });
+
+    // -------------------------
+    // Phone: digits only, 10–11
+    // -------------------------
+    ["phone", "ePhone"].forEach(id => {
+
+        on(id, "input", function () {
+            let val = String(this.value || "")
+                .replace(/\D/g, "")
+                .slice(0, 11);
+            this.value = val;
+        });
+
+        on(id, "blur", function () {
+            if (!this.value) {
+                this.setCustomValidity("");
+            } else if (this.value.length < 10 || this.value.length > 11) {
+                this.setCustomValidity("Phone number must be 10–11 digits");
+            } else {
+                this.setCustomValidity("");
+            }
+        });
+
+    });
+
+    const toastMap = [
+        {
+            show: @(TempData["AddSuccess"] != null ? "true" : "false"),
+            id: "addSuccessToast",
+            delay: 3000
+        },
+        {
+            show: @(TempData["AddError"] != null ? "true" : "false"),
+            id: "addErrorToast",
+            delay: 5000
+        },
+        {
+            show: @(TempData["UpdateSuccess"] != null ? "true" : "false"),
+            id: "updateSuccessToast",
+            delay: 3000
+        },
+        {
+            show: @(TempData["UpdateError"] != null ? "true" : "false"),
+            id: "updateErrorToast",
+            delay: 5000
+        }
+    ];
+
+    toastMap.forEach(t => {
+        if (t.show) {
+            const el = document.getElementById(t.id);
+            if (el) {
+                new bootstrap.Toast(el, { delay: t.delay }).show();
+            }
+        }
+    });
+
+});
+
+
+
+function viewStudent(btn) {
+    let s;
+
+    try {
+        s = JSON.parse(btn.getAttribute("data-student"));
+    } catch (e) {
+        console.error("Invalid student data", e);
+        return;
+    }
+
+    const setText = (id, val) => {
+        const el = document.getElementById(id);
+        if (el) el.innerText = val ?? "-";
+    };
+
+    setText("vName", s.FullName);
+    setText("vEmail", s.Email);
+    setText("vPhone", s.Phone);
+    setText("vGender", s.Gender);
+    setText("vAddress", s.Address);
+
+    setText(
+        "vDob",
+        s.DateOfBirth ? s.DateOfBirth.split("T")[0] : "-"
+    );
+
+    const avatar = document.getElementById("vAvatar");
+    if (avatar) {
+        avatar.src =
+            s.ProfileImagePath?.trim()
+                ? s.ProfileImagePath
+                : "/uploads/students/default.png";
+    }
+
+    new bootstrap.Modal(document.getElementById("viewModal")).show();
+}
+
+function editStudent(btn) {
+    let s;
+
+    try {
+        s = JSON.parse(btn.getAttribute("data-student"));
+    } catch (e) {
+        console.error("Invalid student data", e);
+        return;
+    }
+
+    const setVal = (id, val) => {
+        const el = document.getElementById(id);
+        if (el) el.value = val ?? "";
+    };
+
+    setVal("eId", s.Id);
+    setVal("eName", s.FullName);
+    setVal("eEmail", s.Email);
+    setVal("ePhone", s.Phone);
+    setVal("eGender", s.Gender);
+    setVal("eAddress", s.Address);
+    setVal("eStatus", String(s.IsActive));
+    setVal(
+        "eDob",
+        s.DateOfBirth ? s.DateOfBirth.split("T")[0] : ""
+    );
+
+    const avatar = document.getElementById("eAvatarPreview");
+    if (avatar) {
+        avatar.src =
+            s.ProfileImagePath?.trim()
+                ? s.ProfileImagePath
+                : "/uploads/students/default.png";
+    }
+
+    new bootstrap.Modal(document.getElementById("editModal")).show();
+}
+
+
+function confirmDelete(id, name) {
+    document.getElementById('dId').value = id;
+    document.getElementById('dName').innerText = name;
+
+    new bootstrap.Modal(document.getElementById('deleteModal')).show();
+}
+
+function previewAddImage(input) {
+    if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = e => {
+            document.getElementById('aAvatarPreview').src = e.target.result;
+        };
+        reader.readAsDataURL(input.files[0]);
+    }
+}
+
+setTimeout(() => {
+    const alert = document.querySelector('.alert');
+    if (alert) {
+        bootstrap.Alert.getOrCreateInstance(alert).close();
+    }
+}, 3000);
+
+</script>

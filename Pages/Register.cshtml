@@ -1,0 +1,122 @@
+@page
+@model CourseFlow.Pages.RegisterModel
+@{
+    ViewData["Title"] = "Register";
+}
+
+@if (Model.RegisterSuccess)
+{
+    <script>
+        alert("Registration successful. Please log in.");
+        window.location.href = "/Login";
+    </script>
+}
+
+<style>
+    .register-wrapper {
+        min-height: 80vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(135deg, #f5f7fa, #e4ebf5);
+    }
+
+    .register-card {
+        width: 100%;
+        max-width: 420px;
+        background: #ffffff;
+        padding: 32px;
+        border-radius: 12px;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.08);
+    }
+
+    .register-card h2 {
+        text-align: center;
+        margin-bottom: 24px;
+        font-weight: 600;
+        color: #333;
+    }
+
+    .form-group {
+        margin-bottom: 16px;
+    }
+
+    .form-group label {
+        display: block;
+        margin-bottom: 6px;
+        font-size: 14px;
+        color: #555;
+    }
+
+    .form-control {
+        width: 100%;
+        padding: 10px 12px;
+        border-radius: 8px;
+        border: 1px solid #ccc;
+        font-size: 14px;
+    }
+
+    .btn-register {
+        width: 100%;
+        padding: 12px;
+        border-radius: 8px;
+        border: none;
+        background: #16a34a;
+        color: white;
+        font-size: 15px;
+        font-weight: 500;
+        cursor: pointer;
+    }
+
+    .btn-register:hover {
+        background: #15803d;
+    }
+
+    .register-message {
+        margin-top: 16px;
+        text-align: center;
+        font-size: 14px;
+        color: #dc2626;
+    }
+</style>
+
+<div class="register-wrapper">
+    <div class="register-card">
+        <h2>Create Account</h2>
+
+        <form method="post">
+            <div class="form-group">
+                <label asp-for="FullName">Full Name</label>
+                <input asp-for="FullName" class="form-control" required />
+            </div>
+
+            <div class="form-group">
+                <label asp-for="Email">Email</label>
+                <input asp-for="Email" type="email" class="form-control" required />
+            </div>
+
+            <div class="form-group">
+                <label asp-for="Password">Password</label>
+                <input asp-for="Password" type="password" class="form-control" required />
+            </div>
+
+            <button type="submit" class="btn-register">
+                Register
+            </button>
+        </form>
+
+        @if (!string.IsNullOrEmpty(Model.Message))
+        {
+            <div class="register-message">
+                @Model.Message
+            </div>
+        }
+
+        <div style="margin-top: 18px; text-align: center; font-size: 14px;">
+            Already have an account?
+            <a asp-page="/Login" style="color:#4f46e5; text-decoration:none; font-weight:500;">
+                Login
+            </a>
+        </div>
+    </div>
+</div>
