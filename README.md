@@ -49,7 +49,7 @@ Apply the schema and seed the default administrator:
 dotnet ef database update
 
 The system will automatically seed an Admin account on first run:
-- User: admin@test.com
+- User: admin@courseflow.com
 - Pass: 1234
 
 Access Levels
